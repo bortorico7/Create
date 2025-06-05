@@ -32,7 +32,7 @@
       const duration = document.getElementById('duration').value;
       document.getElementById('logs').innerText = "جاري التنفيذ...";
 
-      const response = await fetch('https://your-backend-url.repl.co/run', {
+      const response = await fetch('https://468dbf39-e54f-4761-9913-17400c4d8599-00-13do5z9r68ksk.janeway.replit.dev/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, count, duration })
