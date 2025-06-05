@@ -1,46 +1,137 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <title>لوحة تحكم البوتات</title>
-  <style>
-    body { background-color: #1e1e1e; color: white; font-family: Arial; padding: 20px; }
-    input, button { padding: 10px; margin: 10px 0; width: 100%; font-size: 16px; }
-    button { background-color: #2ecc71; border: none; color: white; cursor: pointer; }
-    #logs { background-color: #333; padding: 10px; margin-top: 20px; white-space: pre-wrap; }
-  </style>
+<meta charset="UTF-8" />
+<title>فتح دفعات iframes وتراكمها</title>
+<style>
+  body { font-family: Arial, sans-serif; direction: rtl; padding: 20px; }
+  label { display: block; margin-top: 10px; }
+  input, button { padding: 8px; width: 300px; max-width: 100%; margin-top: 5px; }
+  #framesContainer {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  iframe {
+    border: 1px solid #ccc;
+    width: 150px;
+    height: 100px;
+    flex-shrink: 0;
+  }
+  #status {
+    margin-top: 20px;
+    font-weight: bold;
+  }
+  #closeAllBtn {
+    margin-top: 15px;
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    cursor: pointer;
+    padding: 10px 20px;
+    font-weight: bold;
+  }
+</style>
 </head>
 <body>
-  <h1>لوحة تحكم البوتات</h1>
-  <label>رابط البث</label>
-  <input type="text" id="url" placeholder="ضع رابط البث هنا">
+  <h1>فتح دفعات iframes وتراكمها</h1>
+  <label>رابط الموقع:
+    <input type="text" id="url" placeholder="https://example.com" />
+  </label>
+  <label>عدد النوافذ الكلي:
+    <input type="number" id="totalCount" min="1" value="100" />
+  </label>
+  <label>حجم الدفعة (عدد النوافذ التي تفتح مرة واحدة):
+    <input type="number" id="batchSize" min="1" max="50" value="10" />
+  </label>
+  <label>مدة الانتظار بين فتح دفعة وأخرى (بالثواني):
+    <input type="number" id="waitTime" min="1" value="5" />
+  </label>
+  <button id="startBtn">ابدأ الفتح</button>
+  <button id="closeAllBtn" style="display:none;">أغلق جميع النوافذ</button>
+  <div id="status"></div>
 
-  <label>عدد البوتات</label>
-  <input type="number" id="count" placeholder="مثلاً: 3">
+  <div id="framesContainer"></div>
 
-  <label>المدة (بالساعات)</label>
-  <input type="number" id="duration" placeholder="مثلاً: 1">
+<script>
+  const startBtn = document.getElementById('startBtn');
+  const closeAllBtn = document.getElementById('closeAllBtn');
+  const statusDiv = document.getElementById('status');
+  const framesContainer = document.getElementById('framesContainer');
 
-  <button onclick="runBots()">تشغيل البوتات</button>
+  let currentCount = 0;
+  let timer = null;
 
-  <div id="logs"></div>
+  function openBatch(url, batchSize, totalCount, waitTime) {
+    const remaining = totalCount - currentCount;
+    const toOpen = Math.min(batchSize, remaining);
 
-  <script>
-    async function runBots() {
-      const url = document.getElementById('url').value;
-      const count = document.getElementById('count').value;
-      const duration = document.getElementById('duration').value;
-      document.getElementById('logs').innerText = "جاري التنفيذ...";
-
-      const response = await fetch('https://468dbf39-e54f-4761-9913-17400c4d8599-00-13do5z9r68ksk.janeway.replit.dev/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, count, duration })
-      });
-
-      const data = await response.json();
-      document.getElementById('logs').innerText = data.logs.join("\n");
+    for(let i = 0; i < toOpen; i++) {
+      const iframe = document.createElement('iframe');
+      iframe.src = url;
+      iframe.sandbox = "allow-scripts allow-same-origin";
+      framesContainer.appendChild(iframe);
+      currentCount++;
     }
-  </script>
+
+    statusDiv.textContent = `تم فتح ${currentCount} من ${totalCount} نوافذ.`;
+
+    if (currentCount < totalCount) {
+      timer = setTimeout(() => {
+        openBatch(url, batchSize, totalCount, waitTime);
+      }, waitTime * 1000);
+    } else {
+      statusDiv.textContent = `تم فتح جميع النوافذ (${totalCount}) بنجاح.`;
+      closeAllBtn.style.display = 'inline-block';
+    }
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    currentCount = 0;
+    framesContainer.innerHTML = '';
+    closeAllBtn.style.display = 'none';
+    statusDiv.textContent = '';
+
+    const url = document.getElementById('url').value.trim();
+    const totalCount = parseInt(document.getElementById('totalCount').value);
+    const batchSize = parseInt(document.getElementById('batchSize').value);
+    const waitTime = parseInt(document.getElementById('waitTime').value);
+
+    if (!url) {
+      statusDiv.textContent = 'يرجى إدخال رابط صحيح.';
+      return;
+    }
+    if (isNaN(totalCount) || totalCount < 1) {
+      statusDiv.textContent = 'العدد الكلي يجب أن يكون على الأقل 1.';
+      return;
+    }
+    if (isNaN(batchSize) || batchSize < 1 || batchSize > 50) {
+      statusDiv.textContent = 'حجم الدفعة يجب أن يكون بين 1 و 50.';
+      return;
+    }
+    if (isNaN(waitTime) || waitTime < 1) {
+      statusDiv.textContent = 'مدة الانتظار يجب أن تكون على الأقل ثانية واحدة.';
+      return;
+    }
+
+    openBatch(url, batchSize, totalCount, waitTime);
+  });
+
+  closeAllBtn.addEventListener('click', () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    framesContainer.innerHTML = '';
+    currentCount = 0;
+    statusDiv.textContent = 'تم إغلاق جميع النوافذ.';
+    closeAllBtn.style.display = 'none';
+  });
+</script>
 </body>
 </html>
