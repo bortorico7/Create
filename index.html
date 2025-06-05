@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>لوحة تحكم البوتات</title>
+  <style>
+    body { background-color: #1e1e1e; color: white; font-family: Arial; padding: 20px; }
+    input, button { padding: 10px; margin: 10px 0; width: 100%; font-size: 16px; }
+    button { background-color: #2ecc71; border: none; color: white; cursor: pointer; }
+    #logs { background-color: #333; padding: 10px; margin-top: 20px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>لوحة تحكم البوتات</h1>
+  <label>رابط البث</label>
+  <input type="text" id="url" placeholder="ضع رابط البث هنا">
+
+  <label>عدد البوتات</label>
+  <input type="number" id="count" placeholder="مثلاً: 3">
+
+  <label>المدة (بالساعات)</label>
+  <input type="number" id="duration" placeholder="مثلاً: 1">
+
+  <button onclick="runBots()">تشغيل البوتات</button>
+
+  <div id="logs"></div>
+
+  <script>
+    async function runBots() {
+      const url = document.getElementById('url').value;
+      const count = document.getElementById('count').value;
+      const duration = document.getElementById('duration').value;
+      document.getElementById('logs').innerText = "جاري التنفيذ...";
+
+      const response = await fetch('https://your-backend-url.repl.co/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, count, duration })
+      });
+
+      const data = await response.json();
+      document.getElementById('logs').innerText = data.logs.join("\n");
+    }
+  </script>
+</body>
+</html>
